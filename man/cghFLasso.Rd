@@ -30,7 +30,8 @@ cghFLasso(CGH.Array, chromosome=NULL, nucleotide.position=NULL, FL.norm=NULL, FD
 }
         
 \details{
-    \code{cghFLasso} calls copy number alterations for CGH arrays using the fused lasso regression.}
+    \code{cghFLasso} calls copy number alterations for CGH arrays using the fused lasso regression.
+    The dynamic programming algorithm developed by N.A.Johnson is used for the model fitting.  }
 
 \value{
     an object of class \code{cghFLasso} with components
@@ -56,7 +57,7 @@ Biostatistics (In press), available at http://www-stat.stanford.edu/~tibs/resear
 J. Friedman, T. Hastie. R. Tibshirani (2007) `Pathwise coordinate optimization and  the fused lasso'.
 }
 
-\author{R. Tibshirani and P. Wang}
+\author{N. A. Johnson, R. Tibshirani and P. Wang}
 
 \keyword{methods}
 

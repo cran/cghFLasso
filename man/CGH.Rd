@@ -1,24 +1,15 @@
 \name{CGH}
 \alias{CGH}
 \title{Example CGH Array Data}
-\description{A list containing an example CGH array data for package \code{cghFLasso}}
+\description{A list of four components (an example CGH array data for package \code{cghFLasso})}
 
-\value{
-CGH is a list of four components: 
-\item{NormalArray} {a numeric matrix consisting of 2270 rows and 3 columns.}
-\item{DiseaseArray} {a numeric matrix consisting of 2270 rows and 4 columns.} 
-\item{chromosome} {a numeric vector of length 2270.}
-\item{nucposition} {a numeric vector of length 2270.}
-\item{GBM.y} {a numeric vector of length 990.}
-}
-
-\details{
-In \code{NormalArray} and \code{DiseaseArray}, each column corresponds to
-one CGH array, and each row corresponds to one gene/clone. The value of each entry is the log fluorescence
+\format{
+Both \code{NormalArray} and \code{DiseaseArray} are muneric matrix of 2270 rows and 3 columns: each row corresponds to one gene/clone, 
+and each column corresponds to one CGH array. The value of each entry is the log fluorescence
 ratio resulted from the CGH experiment. The order of the genes/clones in the rows is the same as the order of the
 genes/clones on the genome. \code{chromosome} and \code{nucposition} provide chromosome number and nucleotide 
-position for each gene/clone.\\
-\code{GBM.y} contains CGH measurement of one pseudo chromosome.
+position for each gene/clone. \\
+\code{GBM.y} is a numeric vertor of length 990, providing CGH measurement of one pseudo chromosome.
 }
 
 \references{

@@ -35,7 +35,7 @@ Biostatistics (In press), available at http://www-stat.stanford.edu/~tibs/resear
 J. Friedman, T. Hastie. R. Tibshirani (2007) `Pathwise coordinate optimization and  the fused lasso'.
 }
 
-\author{R. Tibshirani and P. Wang}
+\author{N. A. Johnson, R. Tibshirani and P. Wang}
 
 \keyword{methods}
 

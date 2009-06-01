@@ -20,7 +20,9 @@ cghFLasso.ref(CGH.Array, chromosome=NULL, filter=NULL)
 }
         
 \details{
-    \code{cghFLasso.ref} processes reference CGH arrays using the fused lasso regression.}
+    \code{cghFLasso.ref} fits fused lasso regression on reference CGH arrays  . 
+    The dynamic programming algorithm developed by N.A.Johnson is used for the model fitting.   
+ }
 
 \value{
     numeric matrix representing the smoothed result of the reference arrays.
@@ -40,7 +42,8 @@ Biostatistics (In press), available at http://www-stat.stanford.edu/~tibs/resear
 J. Friedman, T. Hastie. R. Tibshirani (2007) `Pathwise coordinate optimization and  the fused lasso'.
 }
 
-\author{R. Tibshirani and P. Wang}
+\author{N. A. Johnson, R. Tibshirani and P. Wang}
+
 
 \keyword{methods}
 

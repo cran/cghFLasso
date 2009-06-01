@@ -59,53 +59,166 @@ return(result)
 
 
 ##################################################################
-###############################  Fused Lasso
+###############################  Fused Lasso by Nike
 ##################################################################
-##############################################################
-#### diag fused lasso: fast algorithm for CGH application
 
-diag.fused.lasso=function(y,lam1,nlam2=50, dlm=.05, thr=1e-6){
-storage.mode(lam1)="double"
-storage.mode(thr)="double"
-storage.mode(y)="double"
-storage.mode(y)="double"
-storage.mode(dlm)="double"
-storage.mode(nlam2)="integer"
+L2L1Vit = function(obsSeq, lambda2 = 1, lambda1 = 0, maxSegs = 1000,
+                   retPrimBds = F)
+{    
+  if(!is.double(obsSeq)){
+    obsSeq = as.double(obsSeq)
+  }
+  obsWts = rep(1.0, length(obsSeq))                            
+  nSegs = rep( as.integer(0) , length(obsSeq))
+  midSegs = matrix(nrow=2, ncol=length(obsSeq), data=0)
+  
+  if(!is.double(lambda2)) lambda2 = as.double(lambda2)
+  if(!is.double(lambda1)) lambda1 = as.double(lambda1)
+  
+  if(retPrimBds){
+    primBds = rep(0.0, 2)
+  }else{
+    primBds = NULL
+  }
+  
+  retBeta = rep(0, length(obsSeq))
+    
+  .Call("L2L1Vit", 
+          obsSeq, obsWts, lambda2, lambda1, 
+          retBeta, maxSegs, nSegs, 
+          midSegs, primBds)
+          
+  return(list(beta=retBeta, vitMsgs=NULL, backPtrs=midSegs, nVitMsgSegs=nSegs,
+              lambda2 = lambda2, lambda1 = lambda1, primBds = primBds) )
+}
 
-#///
-#if(!is.loaded("dflas")){
-#  dyn.load("CGH.FusedLasso.so")
-#}  
-#///
+####################################
+L2L1VitPath = function(obsSeq, lambda2 = c(1.0,3.0), lambda1 = 0, maxSegs = 1000,
+                       segmentedFit = T)
+{ 
+  if(!segmentedFit) warning("L2L1VitPath : segmentedFit = F is not efficient.")
+  
+  if(!is.double(obsSeq)){
+    obsSeq = as.double(obsSeq)
+  }
+  if(!is.double(lambda2)){
+    lambda2 = as.double(lambda2)
+  }          
+  if(!is.double(lambda1)) lambda1 = as.double(lambda1)
+  
+  primBds = matrix(nrow=2, ncol=length(lambda2), data=0)
+  
+  if(segmentedFit){
+    betaPath = vector(mode="list", length=length(lambda2))
+    betaSegs = vector(mode="list", length=length(lambda2))
+  }else{
+    betaPath = matrix(nrow=length(obsSeq), ncol=length(lambda2), data=0)
+    betaSegs = NULL
+  } 
+  
+  .Call("L2L1VitPath", obsSeq, lambda2, lambda1, 
+        betaPath, maxSegs, betaSegs, primBds)
+  return(list(betaPath=betaPath, betaSegs=betaSegs, lambda2 = lambda2, 
+              lambda1 = lambda1,
+              primBds = primBds)) 
+}
 
-res=matrix(NA,nrow=length(y),ncol=nlam2)
-nlp=lam=lmu=bound1=bound2=ierr=NULL
-junk<-.Fortran("dflas",
-                lam1,
-		as.integer(length(y)),
-		y,
-		nlam2,
-		dlm,
-		thr,
-		nl2=integer(1),
-		ao=double(length(y)*nlam2),
-		almo=double(nlam2),
-		nlp=integer(1),
-		ierr=integer(1),
-                PACKAGE="cghFLasso")       
+######################################
+L2L1VitPathPrimBds = function(retList, lambda1, subFit = NULL)
+{
+  nFit = length( retList$betaPath )
+  
+  if(is.null(subFit) ){
+    subFit = 0:(nFit-1)
+  }else{
+    subFit = as.integer(subFit - 1)
+    if(max(subFit) >= nFit || min(subFit) < 0) stop("index out of range.");
+  }
+  
+  if(!is.double(lambda1)) lambda1 = as.double(lambda1)
+  
+  lambda1 = lambda1 - retList$lambda1
+  
+  if(min(lambda1) < 0) stop("lambda1 must be non-negative")
+  
+  retArr = array(0.0, c(2, length(lambda1), length(subFit))  )
+  
+  .Call("L2L1GetPrimBds", 
+        retList$betaPath, retList$betaSegs, 
+        lambda1, subFit, retArr)
+        
+  return( retArr )
+}
 
-	ierr=junk$ierr
-	nlp=junk$nlp
-	lam2=junk$almo[1:junk$nl2]
-	nl2=junk$nl2
-	coef=matrix(junk$ao,nrow=length(y))[,1:junk$nl2,drop=F]
-	bound1=colSums(abs(coef))
-	bound2=colSums(abs(coef[-1,,drop=F]-coef[-nrow(coef),,drop=F]))
+###############################################
+L2L1ExpandFit = function(retList, lambda1 = 0.0, listInds = 1)
+{   
+  if( length(lambda1) > 1){
+    warning("only first value of lambda1 will be used")
+  }
+    
+  if(is.matrix(retList$betaSegs) ){
+     retList = L2L1PathExtract(retList, listInds)
+     return( L2L1ExpandFit( retList  = retList,
+                            lambda1  = lambda1,
+                            listInds = 1:length(listInds) ) ) 
+  }   
+  nFit = length( retList$betaPath )
+  
+  seqLen = retList$betaSegs[[1]]
+  seqLen = seqLen[2, ncol(seqLen)]
+  
+  listInds = as.integer(listInds - 1)
+  if(max(listInds) >= nFit || min(listInds) < 0) stop("index out of range.");
 
-return(list(coef=coef,ierr=ierr,nlp=nlp, lam1=lam1,lam2=lam2,nl2=nl2,bound1=bound1,bound2=bound2))
+  if( length(listInds) == 1){
+    retBeta = rep(0.0, seqLen)
+  }else{
+    retBeta = matrix( nrow=seqLen, ncol=length(listInds), data=0)
+  }   
+  
+  lambda1 = lambda1 - retList$lambda1
+  
+  .Call("L2L1ExpandFit", 
+        retList$betaPath, retList$betaSegs, lambda1, 
+        listInds, retBeta)
+  return( retBeta )
 }
 
 
+######################################
+MatchPrimBd = function(o, lam1seq, lam2seq, s1, s2){
+
+  # Get the path
+  flpth = L2L1VitPath(o, lambda2 = lam2seq, lambda1 = 0.0, segmentedFit = T)
+
+  # Check the bounds for different values of lambda1
+  primBds = L2L1VitPathPrimBds(flpth, lambda1 = lam1seq, subFit = NULL)
+  
+  # Find the nearest match :
+  err1 = ( abs( primBds[1,,] - s1 ) / s1 )
+  err2 = ( abs( primBds[2,,] - s2 ) / s2 )
+
+  i1 = which.min(err1 + err2) - 1
+  lam2i = 1 + as.integer( i1 / length(lam1seq) )
+  lam1i = 1 + ( i1 %% length(lam1seq) )
+
+  # Get the final fit for that value of lambda1/lambda2
+
+  bv1 = L2L1ExpandFit(flpth, lambda1 = lam1seq[lam1i], listInds = lam2i)
+
+  return( list(beta    = bv1, 
+               s1      = primBds[1,lam1i,lam2i], 
+               s2      = primBds[2,lam1i,lam2i],
+               lam1    = lam1seq[lam1i], 
+               lam2    = lam2seq[lam2i],
+               lam1i   = lam1i,
+               lam2i   = lam2i,
+               err1    = err1,
+               err2    = err2,
+               flpth   = flpth,
+               primBds = primBds ))
+}
 
 
 ####################################################################
@@ -175,51 +288,24 @@ s2=2*sd.diff+sum(abs(temp.d)[abs(temp.d)>4*sd.diff])
 y.lo.s1<-lowess(my.y, f=max(1/50, 50/length(my.y)), delta=0)$y
 s1=sum(abs(y.lo.s1))
 
-##################### using grid searching for best parameter
 
-lam1.max=0.001
-lam2.max=max((length(y.v)/10)^0.5, 5)
-dlm=0.05
-
-########
-
+################## get sequence
+lam1.max=0.01
 lam1.list=seq(0,lam1.max,by=0.001)
 np1<-length(lam1.list)
 
+lam2.max=max((length(my.y)/10)^0.5, 5)
+dlm=0.05
+lam2.min=min(0.05*(length(my.y)/10)^0.5, 1)
+lam2.list=seq(lam2.min,lam2.max, by=dlm)
 
-np2=trunc(lam2.max/dlm)
-lam2.list=seq(0,length=np2, by=dlm)
-
-bound1=matrix(NA, nrow=np2, ncol=np1)
-bound2=matrix(NA, nrow=np2, ncol=np1)
-bb=NULL
-
-for(i in 1:np1)
-{
-a=diag.fused.lasso(my.y,lam1=lam1.list[i],dlm=dlm,nlam2=np2)
-bound1[1:length(a$lam2),i]=a$bound1
-bound2[1:length(a$lam2),i]=a$bound2
-}
-
-aa=abs(bound1-s1)/s1+abs(bound2-s2)/s2
-aa[is.na(aa)]=Inf
-aaa=aa==min(aa)
-i2=(1:np2)[rowSums(aaa)==1]
-i1=(1:np1)[colSums(aaa)==1]
-
-lam1.min=lam1.list[i1]
-lam2.min=lam2.list[i2]
-
-output=diag.fused.lasso(my.y,lam1=lam1.min,nlam2=trunc(lam2.min/dlm), dlm=dlm)
-beta<-output$coef[, ncol(output$coef)]
+result1=MatchPrimBd(my.y, lam1.list, lam2.list, s1, s2)
+beta<-result1$beta
 
 result<-y.v
 result[!is.na(y.v)]<-beta
 return(result)
 }
-
-
-
 
 
 ################# function to call alteration on one CGH array at a given FDR level

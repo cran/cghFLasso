@@ -44,7 +44,7 @@
     \item{sample.summary}{numeric vector with the same lenght of sample numbers. It reports the overall alteration percentage of each sample.}
     \item{Esti.copy}{numeric matrix showing estiamted copy numbers of all genes/clones of all samples.}
     \item{chromosome}{numeric vector with the same length as each CGH array. It's the chromosome number of each gene/clone.}
-    \item{nucposi}{nucposi}{numeric vector with the same length as each CGH array. It's the nucletide position of each gene/clone.}
+    \item{nucposi}{numeric vector with the same length as each CGH array. It's the nucletide position of each gene/clone.}
   }
 
 \references{
@@ -61,7 +61,7 @@ Biostatistics (In press), available at http://www-stat.stanford.edu/~tibs/resear
 J. Friedman, T. Hastie. R. Tibshirani (2007) `Pathwise coordinate optimization and  the fused lasso'.
 }
 
-\author{R. Tibshirani and P. Wang}
+\author{N. A. Johnson, R. Tibshirani and P. Wang}
 
 \keyword{methods}
 
